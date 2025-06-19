@@ -17,10 +17,12 @@ class VisionHMI:
     def __init__(self, root):
         self.root = root
         self.root.title("VisionMaster HMI")
-        self.root.geometry("1280x720")
-        self.root.minsize(1024, 600)
+        self.root.geometry("800x480")  # Adapter à l'écran 7 pouces
+        self.root.minsize(800, 480)    # Ajuster la taille minimale
         self.root.configure(bg="#e6e6e6")
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.root.attributes("-fullscreen", True)  # Optionnel
+        self.root.bind("<Escape>", lambda e: self.root.attributes("-fullscreen", False))
 
         # Initialize camera
         self.cap = None
@@ -196,8 +198,8 @@ class VisionHMI:
         style.theme_create("modern", parent="clam", settings={
             "TButton": {
                 "configure": {
-                    "padding": 8,
-                    "font": ("Segoe UI", 11),
+                    "padding": 4,
+                    "font": ("DejaVu Sans", 8),
                     "background": "#0078d7",
                     "foreground": "#ffffff",
                     "bordercolor": "#005a9e",
@@ -212,7 +214,7 @@ class VisionHMI:
                 "configure": {
                     "background": "#e6e6e6",
                     "foreground": "#212121",
-                    "font": ("Segoe UI", 11)
+                    "font": ("DejaVu Sans", 8)
                 }
             },
             "TFrame": {
@@ -220,15 +222,15 @@ class VisionHMI:
             },
             "TNotebook": {
                 "configure": {
-                    "tabmargins": [5, 5, 5, 0],
+                    "tabmargins": [2, 2, 2, 0],
                     "background": "#f5f5f5",
                     "foreground": "#212121"
                 }
             },
             "TNotebook.Tab": {
                 "configure": {
-                    "padding": [15, 8],
-                    "font": ("Segoe UI", 11, "bold"),
+                    "padding": [8, 4],
+                    "font": ("DejaVu Sans", 8, "bold"),
                     "background": "#f5f5f5",
                     "foreground": "#212121"
                 },
@@ -247,14 +249,15 @@ class VisionHMI:
                 "configure": {
                     "fieldbackground": "#ffffff",
                     "foreground": "#212121",
-                    "font": ("Segoe UI", 11)
+                    "font": ("DejaVu Sans", 8)
                 }
             },
             "TCombobox": {
                 "configure": {
                     "fieldbackground": "#ffffff",
                     "foreground": "#212121",
-                    "font": ("Segoe UI", 11)
+                    "font": ("DejaVu Sans", 8),
+                    "padding": 2
                 }
             }
         })
@@ -266,9 +269,9 @@ class VisionHMI:
         tk.Label(self.title_bar, text="VisionMaster HMI", bg="#0078d7", fg="#ffffff", font=("Segoe UI", 13, "bold")).pack(side=tk.LEFT, padx=10)
         self.mode_selector = ttk.Combobox(self.title_bar, textvariable=self.mode, values=["Mode Réglage", "Run Mode"], state="readonly", width=15)
         self.mode_selector.pack(side=tk.LEFT, padx=5)
-        tk.Button(self.title_bar, text="🗕", bg="#0078d7", fg="#ffffff", bd=0, command=self.root.iconify).pack(side=tk.RIGHT)
-        tk.Button(self.title_bar, text="🗖", bg="#0078d7", fg="#ffffff", bd=0, command=self.toggle_maximize).pack(side=tk.RIGHT)
-        tk.Button(self.title_bar, text="🗙", bg="#0078d7", fg="#ffffff", bd=0, command=self.on_closing).pack(side=tk.RIGHT)
+        tk.Button(self.title_bar, text="Min", bg="#0078d7", fg="#ffffff", bd=0, command=self.root.iconify).pack(side=tk.RIGHT)
+        tk.Button(self.title_bar, text="Max", bg="#0078d7", fg="#ffffff", bd=0, command=self.toggle_maximize).pack(side=tk.RIGHT)
+        tk.Button(self.title_bar, text="X", bg="#0078d7", fg="#ffffff", bd=0, command=self.on_closing).pack(side=tk.RIGHT)
         self.title_bar.bind("<B1-Motion>", self.move_window)
         self.title_bar.bind("<Button-1>", self.get_pos)
 
@@ -289,7 +292,7 @@ class VisionHMI:
         self.root.config(menu=self.menubar)
 
         # Main layout
-        self.main_frame = ttk.Frame(self.root, padding=10)
+        self.main_frame = ttk.Frame(self.root, padding=5)
         self.main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Status bar
@@ -315,8 +318,8 @@ class VisionHMI:
         self.left_panel = ttk.Frame(self.paned_window)
         self.paned_window.add(self.left_panel, weight=1)
 
-        self.canvas = tk.Canvas(self.left_panel, width=640, height=480, bg="#000000", highlightthickness=1, highlightbackground="#d4d4d4")
-        self.canvas.pack(padx=5, pady=5)
+        self.canvas = tk.Canvas(self.left_panel, width=400, height=300, bg="#000000", highlightthickness=1, highlightbackground="#d4d4d4")
+        self.canvas.pack(padx=2, pady=2)
         self.canvas.bind("<Button-1>", self.start_roi_or_pick_color)
         self.canvas.bind("<B1-Motion>", self.draw_roi_or_mask)
         self.canvas.bind("<ButtonRelease-1>", self.end_roi_or_mask)
@@ -326,49 +329,50 @@ class VisionHMI:
         self.canvas.bind("<Motion>", self.update_cursor)
 
         self.roi_info_frame = ttk.Frame(self.left_panel)
-        self.roi_info_frame.pack(fill=tk.X, padx=5, pady=5)
+        self.roi_info_frame.pack(fill=tk.X, padx=2, pady=2)
         self.roi_info_var = tk.StringVar(value="ROI Info: None")
         ttk.Label(self.roi_info_frame, textvariable=self.roi_info_var).pack(side=tk.LEFT)
         ttk.Checkbutton(self.roi_info_frame, text="Snap to Grid", variable=self.snap_to_grid).pack(side=tk.RIGHT)
 
         self.result_frame = ttk.Frame(self.left_panel, relief=tk.SUNKEN, borderwidth=1)
         self.result_frame.pack(fill=tk.X, padx=5, pady=5)
-        self.result_text = tk.Text(self.result_frame, height=6, width=50, font=("Segoe UI", 10), bg="#ffffff", fg="#212121")
+        self.result_text = tk.Text(self.result_frame, height=4, width=30, font=("Segoe UI", 8), bg="#ffffff", fg="#212121")
         self.result_text.pack(pady=5)
         self.result_text.tag_config("green", foreground="#28a745")
         self.result_text.tag_config("red", foreground="#dc3545")
         self.result_button_frame = ttk.Frame(self.result_frame)
         self.result_button_frame.pack(fill=tk.X)
-        ttk.Button(self.result_button_frame, text="📸 Save Image", command=self.save_image).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.result_button_frame, text="📄 Generate PDF", command=self.generate_pdf_report).pack(side=tk.LEFT, padx=5)
-        ttk.Button(self.result_button_frame, text="📜 View Log", command=self.view_log).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.result_button_frame, text=" Save Image", command=self.save_image).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.result_button_frame, text=" Generate PDF", command=self.generate_pdf_report).pack(side=tk.LEFT, padx=5)
+        ttk.Button(self.result_button_frame, text=" View Log", command=self.view_log).pack(side=tk.LEFT, padx=5)
 
         # Right panel: Tabs
         self.right_panel = ttk.Frame(self.paned_window)
         self.paned_window.add(self.right_panel, weight=1)
         self.notebook = ttk.Notebook(self.right_panel)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
 
         # ROI Tab
         self.roi_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.roi_frame, text="📍 ROI")
+        self.notebook.add(self.roi_frame, text=" ROI")
         ttk.Label(self.roi_frame, text="ROI Shape").pack(pady=5)
-        ttk.Combobox(self.roi_frame, textvariable=self.roi_shape, values=["rectangle", "circle"], state="readonly", width=15).pack(pady=5)
-        ttk.Button(self.roi_frame, text="➕ Add ROI", command=self.reset_roi).pack(pady=5)
-        ttk.Button(self.roi_frame, text="🎨 Draw Mask", command=self.start_mask_drawing).pack(pady=5)
-        ttk.Button(self.roi_frame, text="🗑️ Clear Mask", command=self.clear_mask).pack(pady=5)
-        ttk.Button(self.roi_frame, text="🗑️ Clear All ROIs", command=self.clear_rois).pack(pady=5)
+        ttk.Combobox(self.roi_frame, textvariable=self.roi_shape, values=["rectangle", "circle"], state="readonly", width=10).pack(pady=5)
+        ttk.Button(self.roi_frame, text="Add ROI", command=self.reset_roi).pack(pady=5)
+        ttk.Button(self.roi_frame, text="Draw Mask", command=self.start_mask_drawing).pack(pady=5)
+        ttk.Button(self.roi_frame, text="Clear Mask", command=self.clear_mask).pack(pady=5)
+        ttk.Button(self.roi_frame, text="Clear All ROIs", command=self.clear_rois).pack(pady=5)
         self.roi_listbox = tk.Listbox(self.roi_frame, height=5, font=("Segoe UI", 10), bg="#ffffff", fg="#212121")
         self.roi_listbox.pack(pady=5, fill=tk.X)
-        ttk.Button(self.roi_frame, text="❌ Delete Selected ROI", command=self.delete_selected_roi).pack(pady=5)
+        ttk.Button(self.roi_frame, text=" Delete Selected ROI", command=self.delete_selected_roi).pack(pady=5)
 
         # Inspection Tab
-        self.inspection_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.inspection_frame, text="🔍 Inspections")
-        ttk.Label(self.inspection_frame, text="ROI ID").pack(pady=5)
+        self.inspection_frame = ttk.Frame(self.notebook, padding=2)
+        self.notebook.add(self.inspection_frame, text="Inspections")
+        ttk.Label(self.inspection_frame, text="ROI ID", font=("DejaVu Sans", 8)).pack(pady=2)
         self.roi_id_var = tk.StringVar()
-        self.roi_id_menu = ttk.OptionMenu(self.inspection_frame, self.roi_id_var, "")
-        self.roi_id_menu.pack(pady=5)
+        self.roi_id_menu = tk.OptionMenu(self.inspection_frame, self.roi_id_var, "")
+        self.roi_id_menu.config(width=8)
+        self.roi_id_menu.pack(pady=2)
         inspection_canvas = tk.Canvas(self.inspection_frame, bg="#e6e6e6")
         inspection_scrollbar = ttk.Scrollbar(self.inspection_frame, orient=tk.VERTICAL, command=inspection_canvas.yview)
         inspection_inner = ttk.Frame(inspection_canvas)
@@ -378,264 +382,220 @@ class VisionHMI:
         )
         inspection_canvas.create_window((0, 0), window=inspection_inner, anchor="nw")
         inspection_canvas.configure(yscrollcommand=inspection_scrollbar.set)
-        inspection_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+        inspection_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=2)
         inspection_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Collapsible sections for inspection controls
         def create_collapsible_section(parent, title):
             frame = ttk.Frame(parent)
-            frame.pack(fill=tk.X, pady=2)
-            var = tk.BooleanVar(value=True)
+            frame.pack(fill=tk.X, pady=1)
+            var = tk.BooleanVar(value=False)  # Replier par défaut
             header = ttk.Checkbutton(frame, text=title, variable=var, style="TButton")
             header.pack(fill=tk.X)
             content = ttk.Frame(frame)
-            content.pack(fill=tk.X, padx=10)
+            content.pack_forget()  # Initialement replié
             def toggle():
                 if var.get():
-                    content.pack(fill=tk.X, padx=10)
+                    content.pack(fill=tk.X, padx=5)
                 else:
                     content.pack_forget()
             var.trace("w", lambda *args: toggle())
             return content
+        
+
 
         # Density Inspection
         density_frame = create_collapsible_section(inspection_inner, "Density Inspection")
-        ttk.Label(density_frame, text="Density Threshold", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(density_frame, text="Min").pack(side=tk.LEFT)
-        ttk.Scale(density_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["density_threshold_min"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(density_frame, textvariable=self.params["density_threshold_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(density_frame, text="Max").pack(side=tk.LEFT)
-        ttk.Scale(density_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["density_threshold_max"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(density_frame, textvariable=self.params["density_threshold_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(density_frame, text="Run Density", command=self.run_density_inspection).pack(side=tk.LEFT, padx=5)
-        ttk.Button(density_frame, text="Preview", command=lambda: self.run_density_inspection(preview=True)).pack(side=tk.LEFT, padx=5)
-
+        ttk.Label(density_frame, text="Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(density_frame, textvariable=self.params["density_threshold_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Scale(density_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["density_threshold_min"], length=40).grid(row=0, column=2, padx=2, pady=1)
+        ttk.Label(density_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(density_frame, textvariable=self.params["density_threshold_max"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Scale(density_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["density_threshold_max"], length=40).grid(row=1, column=2, padx=2, pady=1)
+        ttk.Button(density_frame, text="Run", command=self.run_density_inspection, width=6).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Button(density_frame, text="Preview", command=lambda: self.run_density_inspection(preview=True), width=6).grid(row=1, column=3, padx=2, pady=1)
         # Contrast Inspection
         contrast_frame = create_collapsible_section(inspection_inner, "Contrast Inspection")
-        ttk.Label(contrast_frame, text="Contrast Threshold", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(contrast_frame, text="Min").pack(side=tk.LEFT)
-        ttk.Scale(contrast_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["contrast_threshold_min"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(contrast_frame, textvariable=self.params["contrast_threshold_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(contrast_frame, text="Max").pack(side=tk.LEFT)
-        ttk.Scale(contrast_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["contrast_threshold_max"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(contrast_frame, textvariable=self.params["contrast_threshold_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(contrast_frame, text="Run Contrast", command=self.run_contrast_inspection).pack(side=tk.LEFT, padx=5)
-        ttk.Button(contrast_frame, text="Preview", command=lambda: self.run_contrast_inspection(preview=True)).pack(side=tk.LEFT, padx=5)
-
+        ttk.Label(contrast_frame, text="Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(contrast_frame, textvariable=self.params["contrast_threshold_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Scale(contrast_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["contrast_threshold_min"], length=40).grid(row=0, column=2, padx=2, pady=1)
+        ttk.Label(contrast_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(contrast_frame, textvariable=self.params["contrast_threshold_max"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Scale(contrast_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["contrast_threshold_max"], length=40).grid(row=1, column=2, padx=2, pady=1)
+        ttk.Button(contrast_frame, text="Run", command=self.run_contrast_inspection, width=6).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Button(contrast_frame, text="Preview", command=lambda: self.run_contrast_inspection(preview=True), width=6).grid(row=1, column=3, padx=2, pady=1)
         # Edge Inspection
         edge_frame = create_collapsible_section(inspection_inner, "Edge Inspection")
-        ttk.Label(edge_frame, text="Edge Threshold", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(edge_frame, text="Min").pack(side=tk.LEFT)
-        ttk.Scale(edge_frame, from_=0, to=10000, orient=tk.HORIZONTAL, variable=self.params["edge_threshold_min"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(edge_frame, textvariable=self.params["edge_threshold_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(edge_frame, text="Max").pack(side=tk.LEFT)
-        ttk.Scale(edge_frame, from_=0, to=10000, orient=tk.HORIZONTAL, variable=self.params["edge_threshold_max"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(edge_frame, textvariable=self.params["edge_threshold_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(edge_frame, text="Run Edge", command=self.run_edge_inspection).pack(side=tk.LEFT, padx=5)
-        ttk.Button(edge_frame, text="Preview", command=lambda: self.run_edge_inspection(preview=True)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(edge_frame, text="Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(edge_frame, textvariable=self.params["edge_threshold_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Scale(edge_frame, from_=0, to=10000, orient=tk.HORIZONTAL, variable=self.params["edge_threshold_min"], length=40).grid(row=0, column=2, padx=2, pady=1)
+        ttk.Label(edge_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(edge_frame, textvariable=self.params["edge_threshold_max"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Scale(edge_frame, from_=0, to=10000, orient=tk.HORIZONTAL, variable=self.params["edge_threshold_max"], length=40).grid(row=1, column=2, padx=2, pady=1)
+        ttk.Button(edge_frame, text="Run", command=self.run_edge_inspection, width=6).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Button(edge_frame, text="Preview", command=lambda: self.run_edge_inspection(preview=True), width=6).grid(row=1, column=3, padx=2, pady=1)
         edge_subframe = ttk.Frame(edge_frame)
-        edge_subframe.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(edge_subframe, text="Canny Low", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(edge_subframe, textvariable=self.params["edge_canny_low"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(edge_subframe, text="Canny High", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(edge_subframe, textvariable=self.params["edge_canny_high"], width=6).pack(side=tk.LEFT, padx=2)
+        edge_subframe.grid(row=2, column=0, columnspan=4, sticky="ew", padx=5, pady=1)
+        ttk.Label(edge_subframe, text="Canny Low:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(edge_subframe, textvariable=self.params["edge_canny_low"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Label(edge_subframe, text="Canny High:", font=("DejaVu Sans", 7)).grid(row=0, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(edge_subframe, textvariable=self.params["edge_canny_high"], width=4).grid(row=0, column=3, padx=2, pady=1)
         # Blob Detection
         blob_frame = create_collapsible_section(inspection_inner, "Blob Detection")
-        ttk.Label(blob_frame, text="Threshold", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(blob_frame, text="Manual Threshold", variable=self.params["blob_threshold_manual"]).pack(side=tk.LEFT, padx=5)
-        ttk.Label(blob_frame, text="Value").pack(side=tk.LEFT)
-        ttk.Scale(blob_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["blob_threshold_value"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(blob_frame, textvariable=self.params["blob_threshold_value"], width=6).pack(side=tk.LEFT, padx=2)
+        # Threshold
+        ttk.Label(blob_frame, text="Threshold:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Checkbutton(blob_frame, text="Manual", variable=self.params["blob_threshold_manual"]).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Entry(blob_frame, textvariable=self.params["blob_threshold_value"], width=4).grid(row=0, column=2, padx=2, pady=1)
+        ttk.Scale(blob_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.params["blob_threshold_value"], length=40).grid(row=0, column=3, padx=2, pady=1)
         # Size Filters
         size_frame = ttk.Frame(blob_frame)
-        size_frame.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(size_frame, text="Area Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(size_frame, textvariable=self.params["blob_area_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(size_frame, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(size_frame, textvariable=self.params["blob_area_max"], width=6).pack(side=tk.LEFT, padx=2)
-        size_subframe = ttk.Frame(blob_frame)
-        size_subframe.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(size_subframe, text="Width Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(size_subframe, textvariable=self.params["blob_width_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(size_subframe, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(size_subframe, textvariable=self.params["blob_width_max"], width=6).pack(side=tk.LEFT, padx=2)
-        size_subframe2 = ttk.Frame(blob_frame)
-        size_subframe2.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(size_subframe2, text="Height Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(size_subframe2, textvariable=self.params["blob_height_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(size_subframe2, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(size_subframe2, textvariable=self.params["blob_height_max"], width=6).pack(side=tk.LEFT, padx=2)
-
+        size_frame.grid(row=1, column=0, columnspan=4, sticky="ew", padx=5, pady=1)
+        ttk.Label(size_frame, text="Area Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(size_frame, textvariable=self.params["blob_area_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Label(size_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=0, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(size_frame, textvariable=self.params["blob_area_max"], width=4).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Label(size_frame, text="Width Min:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(size_frame, textvariable=self.params["blob_width_min"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Label(size_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(size_frame, textvariable=self.params["blob_width_max"], width=4).grid(row=1, column=3, padx=2, pady=1)
+        ttk.Label(size_frame, text="Height Min:", font=("DejaVu Sans", 7)).grid(row=2, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(size_frame, textvariable=self.params["blob_height_min"], width=4).grid(row=2, column=1, padx=2, pady=1)
+        ttk.Label(size_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=2, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(size_frame, textvariable=self.params["blob_height_max"], width=4).grid(row=2, column=3, padx=2, pady=1)
         # Shape Filters
         shape_frame = ttk.Frame(blob_frame)
-        shape_frame.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(shape_frame, text="Circularity Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(shape_frame, textvariable=self.params["blob_circularity_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(shape_frame, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(shape_frame, textvariable=self.params["blob_circularity_max"], width=6).pack(side=tk.LEFT, padx=2)
-        shape_subframe = ttk.Frame(blob_frame)
-        shape_subframe.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(shape_subframe, text="Aspect Ratio Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(shape_subframe, textvariable=self.params["blob_aspect_ratio_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(shape_subframe, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(shape_subframe, textvariable=self.params["blob_aspect_ratio_max"], width=6).pack(side=tk.LEFT, padx=2)
-        shape_subframe2 = ttk.Frame(blob_frame)
-        shape_subframe2.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(shape_subframe2, text="Solidity Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(shape_subframe2, textvariable=self.params["blob_solidity_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(shape_subframe2, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(shape_subframe2, textvariable=self.params["blob_solidity_max"], width=6).pack(side=tk.LEFT, padx=2)
-        shape_subframe3 = ttk.Frame(blob_frame)
-        shape_subframe3.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(shape_subframe3, text="Bounding Shape", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Combobox(shape_subframe3, textvariable=self.params["blob_bounding_shape"], values=["None", "Rectangle", "Circle"], state="readonly", width=10).pack(side=tk.LEFT, padx=2)
-
+        shape_frame.grid(row=2, column=0, columnspan=4, sticky="ew", padx=5, pady=1)
+        ttk.Label(shape_frame, text="Circularity Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(shape_frame, textvariable=self.params["blob_circularity_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Label(shape_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=0, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(shape_frame, textvariable=self.params["blob_circularity_max"], width=4).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Label(shape_frame, text="Aspect Ratio Min:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(shape_frame, textvariable=self.params["blob_aspect_ratio_min"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Label(shape_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(shape_frame, textvariable=self.params["blob_aspect_ratio_max"], width=4).grid(row=1, column=3, padx=2, pady=1)
+        ttk.Label(shape_frame, text="Solidity Min:", font=("DejaVu Sans", 7)).grid(row=2, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(shape_frame, textvariable=self.params["blob_solidity_min"], width=4).grid(row=2, column=1, padx=2, pady=1)
+        ttk.Label(shape_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=2, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(shape_frame, textvariable=self.params["blob_solidity_max"], width=4).grid(row=2, column=3, padx=2, pady=1)
+        ttk.Label(shape_frame, text="Bounding Shape:", font=("DejaVu Sans", 7)).grid(row=3, column=0, padx=2, pady=1, sticky="e")
+        ttk.Combobox(shape_frame, textvariable=self.params["blob_bounding_shape"], values=["None", "Rectangle", "Circle"], state="readonly", width=8).grid(row=3, column=1, columnspan=3, padx=2, pady=1, sticky="w")
         # Color Filters
         color_frame = ttk.Frame(blob_frame)
-        color_frame.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_frame, text="Color Mode", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Combobox(color_frame, textvariable=self.params["blob_color_mode"], values=["Grayscale", "RGB", "HSV"], state="readonly", width=10).pack(side=tk.LEFT, padx=2)
-        color_subframe = ttk.Frame(blob_frame)
-        color_subframe.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe, text="RGB R Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe, textvariable=self.params["blob_rgb_r_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_subframe, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe, textvariable=self.params["blob_rgb_r_max"], width=6).pack(side=tk.LEFT, padx=2)
-        color_subframe2 = ttk.Frame(blob_frame)
-        color_subframe2.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe2, text="RGB G Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe2, textvariable=self.params["blob_rgb_g_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_subframe2, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe2, textvariable=self.params["blob_rgb_g_max"], width=6).pack(side=tk.LEFT, padx=2)
-        color_subframe3 = ttk.Frame(blob_frame)
-        color_subframe3.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe3, text="RGB B Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe3, textvariable=self.params["blob_rgb_b_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_subframe3, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe3, textvariable=self.params["blob_rgb_b_max"], width=6).pack(side=tk.LEFT, padx=2)
-        color_subframe4 = ttk.Frame(blob_frame)
-        color_subframe4.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe4, text="HSV H Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe4, textvariable=self.params["blob_hsv_h_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_subframe4, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe4, textvariable=self.params["blob_hsv_h_max"], width=6).pack(side=tk.LEFT, padx=2)
-        color_subframe5 = ttk.Frame(blob_frame)
-        color_subframe5.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe5, text="HSV S Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe5, textvariable=self.params["blob_hsv_s_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_subframe5, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe5, textvariable=self.params["blob_hsv_s_max"], width=6).pack(side=tk.LEFT, padx=2)
-        color_subframe6 = ttk.Frame(blob_frame)
-        color_subframe6.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe6, text="HSV V Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe6, textvariable=self.params["blob_hsv_v_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_subframe6, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe6, textvariable=self.params["blob_hsv_v_max"], width=6).pack(side=tk.LEFT, padx=2)
-
+        color_frame.grid(row=3, column=0, columnspan=4, sticky="ew", padx=5, pady=1)
+        ttk.Label(color_frame, text="Color Mode:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Combobox(color_frame, textvariable=self.params["blob_color_mode"], values=["Grayscale", "RGB", "HSV"], state="readonly", width=8).grid(row=0, column=1, columnspan=3, padx=2, pady=1, sticky="w")
+        ttk.Label(color_frame, text="RGB R Min:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_rgb_r_min"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_rgb_r_max"], width=4).grid(row=1, column=3, padx=2, pady=1)
+        ttk.Label(color_frame, text="RGB G Min:", font=("DejaVu Sans", 7)).grid(row=2, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_rgb_g_min"], width=4).grid(row=2, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=2, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_rgb_g_max"], width=4).grid(row=2, column=3, padx=2, pady=1)
+        ttk.Label(color_frame, text="RGB B Min:", font=("DejaVu Sans", 7)).grid(row=3, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_rgb_b_min"], width=4).grid(row=3, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=3, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_rgb_b_max"], width=4).grid(row=3, column=3, padx=2, pady=1)
+        ttk.Label(color_frame, text="HSV H Min:", font=("DejaVu Sans", 7)).grid(row=4, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_hsv_h_min"], width=4).grid(row=4, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=4, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_hsv_h_max"], width=4).grid(row=4, column=3, padx=2, pady=1)
+        ttk.Label(color_frame, text="HSV S Min:", font=("DejaVu Sans", 7)).grid(row=5, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_hsv_s_min"], width=4).grid(row=5, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=5, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_hsv_s_max"], width=4).grid(row=5, column=3, padx=2, pady=1)
+        ttk.Label(color_frame, text="HSV V Min:", font=("DejaVu Sans", 7)).grid(row=6, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_hsv_v_min"], width=4).grid(row=6, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=6, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["blob_hsv_v_max"], width=4).grid(row=6, column=3, padx=2, pady=1)
         # Output Parameters
         output_frame = ttk.Frame(blob_frame)
-        output_frame.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(output_frame, text="Output Parameters").pack(anchor=tk.W)
-        for output, var in self.blob_outputs.items():
-            ttk.Checkbutton(output_frame, text=output.replace("_", " ").title(), variable=var).pack(anchor=tk.W)
-
+        output_frame.grid(row=4, column=0, columnspan=4, sticky="ew", padx=5, pady=1)
+        ttk.Label(output_frame, text="Output:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        for i, (output, var) in enumerate(self.blob_outputs.items()):
+            ttk.Checkbutton(output_frame, text=output.replace("_", " ").title(), variable=var).grid(row=i+1, column=0, padx=2, pady=1, sticky="w")
         # Judgment Criteria
         judgment_frame = ttk.Frame(blob_frame)
-        judgment_frame.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(judgment_frame, text="Judgment Criteria").pack(anchor=tk.W)
-        ttk.Label(judgment_frame, text="Blob Count Min").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(judgment_frame, textvariable=self.judgment_criteria["blob_count_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(judgment_frame, text="Max").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(judgment_frame, textvariable=self.judgment_criteria["blob_count_max"], width=6).pack(side=tk.LEFT, padx=2)
-        judgment_subframe = ttk.Frame(blob_frame)
-        judgment_subframe.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(judgment_subframe, text="Blob Area Min").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(judgment_subframe, textvariable=self.judgment_criteria["blob_area_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(judgment_subframe, text="Max").pack(side=tk.LEFT, padx=5)
-        ttk.Entry(judgment_subframe, textvariable=self.judgment_criteria["blob_area_max"], width=6).pack(side=tk.LEFT, padx=2)
-        judgment_subframe2 = ttk.Frame(blob_frame)
-        judgment_subframe2.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(judgment_subframe2, text="Criteria Type").pack(side=tk.LEFT, padx=5)
-        ttk.Combobox(judgment_subframe2, textvariable=self.judgment_criteria["criteria_type"], values=["At least one blob", "Blob count limit"], state="readonly", width=15).pack(side=tk.LEFT, padx=2)
-
-        ttk.Button(blob_frame, text="Run Blob", command=self.run_blob_detection).pack(side=tk.LEFT, padx=5)
-        ttk.Button(blob_frame, text="Preview", command=lambda: self.run_blob_detection(preview=True)).pack(side=tk.LEFT, padx=5)
-        ttk.Checkbutton(blob_frame, text="Boundary Exclusion", variable=self.params["boundary_exclusion"]).pack(side=tk.LEFT, padx=5)
-
+        judgment_frame.grid(row=5, column=0, columnspan=4, sticky="ew", padx=5, pady=1)
+        ttk.Label(judgment_frame, text="Criteria:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="w")
+        ttk.Label(judgment_frame, text="Count Min:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(judgment_frame, textvariable=self.judgment_criteria["blob_count_min"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Label(judgment_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(judgment_frame, textvariable=self.judgment_criteria["blob_count_max"], width=4).grid(row=1, column=3, padx=2, pady=1)
+        ttk.Label(judgment_frame, text="Area Min:", font=("DejaVu Sans", 7)).grid(row=2, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(judgment_frame, textvariable=self.judgment_criteria["blob_area_min"], width=4).grid(row=2, column=1, padx=2, pady=1)
+        ttk.Label(judgment_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=2, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(judgment_frame, textvariable=self.judgment_criteria["blob_area_max"], width=4).grid(row=2, column=3, padx=2, pady=1)
+        ttk.Label(judgment_frame, text="Type:", font=("DejaVu Sans", 7)).grid(row=3, column=0, padx=2, pady=1, sticky="e")
+        ttk.Combobox(judgment_frame, textvariable=self.judgment_criteria["criteria_type"], values=["At least one blob", "Blob count limit"], state="readonly", width=10).grid(row=3, column=1, columnspan=3, padx=2, pady=1, sticky="w")
+        ttk.Button(blob_frame, text="Run", command=self.run_blob_detection, width=6).grid(row=6, column=0, padx=2, pady=1)
+        ttk.Button(blob_frame, text="Preview", command=lambda: self.run_blob_detection(preview=True), width=6).grid(row=6, column=1, padx=2, pady=1)
+        ttk.Checkbutton(blob_frame, text="Boundary Excl.", variable=self.params["boundary_exclusion"]).grid(row=6, column=2, columnspan=2, padx=2, pady=1, sticky="w")
         # Color Detection
         color_frame = create_collapsible_section(inspection_inner, "Color Detection")
-        ttk.Label(color_frame, text="Color Ratio", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(color_frame, text="Min").pack(side=tk.LEFT)
-        ttk.Entry(color_frame, textvariable=self.params["color_ratio_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(color_frame, text="Max").pack(side=tk.LEFT)
-        ttk.Entry(color_frame, textvariable=self.params["color_ratio_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_frame, text="Run Color", command=self.run_color_detection).pack(side=tk.LEFT, padx=5)
-        ttk.Button(color_frame, text="Preview", command=lambda: self.run_color_detection(preview=True)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(color_frame, text="Ratio Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["color_ratio_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Label(color_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=0, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_frame, textvariable=self.params["color_ratio_max"], width=4).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Button(color_frame, text="Run", command=self.run_color_detection, width=6).grid(row=0, column=4, padx=2, pady=1)
+        ttk.Button(color_frame, text="Preview", command=lambda: self.run_color_detection(preview=True), width=6).grid(row=0, column=5, padx=2, pady=1)
+        ttk.Button(color_frame, text="Pick Color", command=self.start_color_picking, width=8).grid(row=0, column=6, padx=2, pady=1)
         color_subframe = ttk.Frame(color_frame)
-        color_subframe.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe, text="Hue Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe, textvariable=self.params["color_hue_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_hue_min"].set(min(self.params["color_hue_min"].get() + 5, 180))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_hue_min"].set(max(self.params["color_hue_min"].get() - 5, 0))).pack(side=tk.LEFT, padx=1)
-        ttk.Label(color_subframe, text="Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe, textvariable=self.params["color_hue_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_hue_max"].set(min(self.params["color_hue_max"].get() + 5, 180))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_hue_max"].set(max(self.params["color_hue_max"].get() - 5, 0))).pack(side=tk.LEFT, padx=1)
-        color_subframe2 = ttk.Frame(color_frame)
-        color_subframe2.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe2, text="Saturation Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe2, textvariable=self.params["color_saturation_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_subframe2, text="+", command=lambda: self.params["color_saturation_min"].set(min(self.params["color_saturation_min"].get() + 5, 255))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_subframe2, text="-", command=lambda: self.params["color_saturation_min"].set(max(self.params["color_saturation_min"].get() - 5, 0))).pack(side=tk.LEFT, padx=1)
-        ttk.Label(color_subframe2, text="Saturation Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe2, textvariable=self.params["color_saturation_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_subframe2, text="+", command=lambda: self.params["color_saturation_max"].set(min(self.params["color_saturation_max"].get() + 5, 255))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_subframe2, text="-", command=lambda: self.params["color_saturation_max"].set(max(self.params["color_saturation_max"].get() - 5, 0))).pack(side=tk.LEFT, padx=1)
-        color_subframe3 = ttk.Frame(color_frame)
-        color_subframe3.pack(fill=tk.X, padx=10, pady=2)
-        ttk.Label(color_subframe3, text="Brightness Min", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe3, textvariable=self.params["color_brightness_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_subframe3, text="+", command=lambda: self.params["color_brightness_min"].set(min(self.params["color_brightness_min"].get() + 5, 255))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_subframe3, text="-", command=lambda: self.params["color_brightness_min"].set(max(self.params["color_brightness_min"].get() - 5, 0))).pack(side=tk.LEFT, padx=1)
-        ttk.Label(color_subframe3, text="Brightness Max", width=15).pack(side=tk.LEFT, padx=5)
-        ttk.Entry(color_subframe3, textvariable=self.params["color_brightness_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(color_subframe3, text="+", command=lambda: self.params["color_brightness_max"].set(min(self.params["color_brightness_max"].get() + 5, 255))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_subframe3, text="-", command=lambda: self.params["color_brightness_max"].set(max(self.params["color_brightness_max"].get() - 5, 0))).pack(side=tk.LEFT, padx=1)
-        ttk.Button(color_frame, text="🎯 Pick Color", command=self.start_color_picking).pack(side=tk.LEFT, pady=5)
-
+        color_subframe.grid(row=1, column=0, columnspan=7, sticky="ew", padx=5, pady=1)
+        ttk.Label(color_subframe, text="Hue Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_subframe, textvariable=self.params["color_hue_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_hue_min"].set(min(self.params["color_hue_min"].get() + 5, 180)), width=2).grid(row=0, column=2, padx=1, pady=1)
+        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_hue_min"].set(max(self.params["color_hue_min"].get() - 5, 0)), width=2).grid(row=0, column=3, padx=1, pady=1)
+        ttk.Label(color_subframe, text="Max:", font=("DejaVu Sans", 7)).grid(row=0, column=4, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_subframe, textvariable=self.params["color_hue_max"], width=4).grid(row=0, column=5, padx=2, pady=1)
+        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_hue_max"].set(min(self.params["color_hue_max"].get() + 5, 180)), width=2).grid(row=0, column=6, padx=1, pady=1)
+        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_hue_max"].set(max(self.params["color_hue_max"].get() - 5, 0)), width=2).grid(row=0, column=7, padx=1, pady=1)
+        ttk.Label(color_subframe, text="Sat. Min:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_subframe, textvariable=self.params["color_saturation_min"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_saturation_min"].set(min(self.params["color_saturation_min"].get() + 5, 255)), width=2).grid(row=1, column=2, padx=1, pady=1)
+        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_saturation_min"].set(max(self.params["color_saturation_min"].get() - 5, 0)), width=2).grid(row=1, column=3, padx=1, pady=1)
+        ttk.Label(color_subframe, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=4, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_subframe, textvariable=self.params["color_saturation_max"], width=4).grid(row=1, column=5, padx=2, pady=1)
+        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_saturation_max"].set(min(self.params["color_saturation_max"].get() + 5, 255)), width=2).grid(row=1, column=6, padx=1, pady=1)
+        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_saturation_max"].set(max(self.params["color_saturation_max"].get() - 5, 0)), width=2).grid(row=1, column=7, padx=1, pady=1)
+        ttk.Label(color_subframe, text="Bright. Min:", font=("DejaVu Sans", 7)).grid(row=2, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_subframe, textvariable=self.params["color_brightness_min"], width=4).grid(row=2, column=1, padx=2, pady=1)
+        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_brightness_min"].set(min(self.params["color_brightness_min"].get() + 5, 255)), width=2).grid(row=2, column=2, padx=1, pady=1)
+        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_brightness_min"].set(max(self.params["color_brightness_min"].get() - 5, 0)), width=2).grid(row=2, column=3, padx=1, pady=1)
+        ttk.Label(color_subframe, text="Max:", font=("DejaVu Sans", 7)).grid(row=2, column=4, padx=2, pady=1, sticky="e")
+        ttk.Entry(color_subframe, textvariable=self.params["color_brightness_max"], width=4).grid(row=2, column=5, padx=2, pady=1)
+        ttk.Button(color_subframe, text="+", command=lambda: self.params["color_brightness_max"].set(min(self.params["color_brightness_max"].get() + 5, 255)), width=2).grid(row=2, column=6, padx=1, pady=1)
+        ttk.Button(color_subframe, text="-", command=lambda: self.params["color_brightness_max"].set(max(self.params["color_brightness_max"].get() - 5, 0)), width=2).grid(row=2, column=7, padx=1, pady=1)
         # Measurement
         measurement_frame = create_collapsible_section(inspection_inner, "Measurement")
-        ttk.Label(measurement_frame, text="Tolerance", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(measurement_frame, text="Min").pack(side=tk.LEFT)
-        ttk.Entry(measurement_frame, textvariable=self.params["measurement_tolerance_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(measurement_frame, text="Max").pack(side=tk.LEFT)
-        ttk.Entry(measurement_frame, textvariable=self.params["measurement_tolerance_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(measurement_frame, text="Run Measurement", command=self.run_measurement).pack(side=tk.LEFT, padx=5)
-        ttk.Button(measurement_frame, text="Preview", command=lambda: self.run_measurement(preview=True)).pack(side=tk.LEFT, padx=5)
-
+        ttk.Label(measurement_frame, text="Tol. Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(measurement_frame, textvariable=self.params["measurement_tolerance_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Label(measurement_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=0, column=2, padx=2, pady=1, sticky="e")
+        ttk.Entry(measurement_frame, textvariable=self.params["measurement_tolerance_max"], width=4).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Button(measurement_frame, text="Run", command=self.run_measurement, width=6).grid(row=0, column=4, padx=2, pady=1)
+        ttk.Button(measurement_frame, text="Preview", command=lambda: self.run_measurement(preview=True), width=6).grid(row=0, column=5, padx=2, pady=1)
         # Focus Check
         focus_frame = create_collapsible_section(inspection_inner, "Focus Check")
-        ttk.Label(focus_frame, text="Focus Threshold", width=20).pack(side=tk.LEFT, padx=5)
-        ttk.Label(focus_frame, text="Min").pack(side=tk.LEFT)
-        ttk.Scale(focus_frame, from_=0, to=500, orient=tk.HORIZONTAL, variable=self.params["focus_threshold_min"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(focus_frame, textvariable=self.params["focus_threshold_min"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Label(focus_frame, text="Max").pack(side=tk.LEFT)
-        ttk.Scale(focus_frame, from_=0, to=500, orient=tk.HORIZONTAL, variable=self.params["focus_threshold_max"], length=80).pack(side=tk.LEFT)
-        ttk.Entry(focus_frame, textvariable=self.params["focus_threshold_max"], width=6).pack(side=tk.LEFT, padx=2)
-        ttk.Button(focus_frame, text="Run Focus", command=self.run_focus_check).pack(side=tk.LEFT, padx=5)
-        ttk.Button(focus_frame, text="Preview", command=lambda: self.run_focus_check(preview=True)).pack(side=tk.LEFT, padx=5)
+        ttk.Label(focus_frame, text="Min:", font=("DejaVu Sans", 7)).grid(row=0, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(focus_frame, textvariable=self.params["focus_threshold_min"], width=4).grid(row=0, column=1, padx=2, pady=1)
+        ttk.Scale(focus_frame, from_=0, to=500, orient=tk.HORIZONTAL, variable=self.params["focus_threshold_min"], length=40).grid(row=0, column=2, padx=2, pady=1)
+        ttk.Label(focus_frame, text="Max:", font=("DejaVu Sans", 7)).grid(row=1, column=0, padx=2, pady=1, sticky="e")
+        ttk.Entry(focus_frame, textvariable=self.params["focus_threshold_max"], width=4).grid(row=1, column=1, padx=2, pady=1)
+        ttk.Scale(focus_frame, from_=0, to=500, orient=tk.HORIZONTAL, variable=self.params["focus_threshold_max"], length=40).grid(row=1, column=2, padx=2, pady=1)
+        ttk.Button(focus_frame, text="Run", command=self.run_focus_check, width=6).grid(row=0, column=3, padx=2, pady=1)
+        ttk.Button(focus_frame, text="Preview", command=lambda: self.run_focus_check(preview=True), width=6).grid(row=1, column=3, padx=2, pady=1)
 
         # Cycle Logic Tab
         self.cycle_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.cycle_frame, text="🔄 Cycle Logic")
+        self.notebook.add(self.cycle_frame, text=" Cycle Logic")
         ttk.Label(self.cycle_frame, text="Cycle Features").pack(pady=5)
         cycle_inner = ttk.Frame(self.cycle_frame)
         cycle_inner.pack(fill=tk.BOTH, padx=5)
         for feature, var in self.cycle_features.items():
             ttk.Checkbutton(cycle_inner, text=feature, variable=var).pack(anchor=tk.W)
-        ttk.Button(self.cycle_frame, text="💾 Save Config", command=self.save_cycle_config).pack(pady=5)
-        ttk.Button(self.cycle_frame, text="📜 Load Config", command=self.load_cycle_config).pack(pady=5)
-        self.cycle_run_button = ttk.Button(self.cycle_frame, text="▶️ Run Cycle", command=self.run_cycle_logic)
+        ttk.Button(self.cycle_frame, text=" Save Config", command=self.save_cycle_config).pack(pady=5)
+        ttk.Button(self.cycle_frame, text=" Load Config", command=self.load_cycle_config).pack(pady=5)
+        self.cycle_run_button = ttk.Button(self.cycle_frame, text=" Run Cycle", command=self.run_cycle_logic)
         self.cycle_run_button.pack(pady=5)
         self.cycle_label = ttk.Label(self.cycle_frame, text="Cycle State: Idle")
         self.cycle_label.pack(pady=5)
@@ -644,16 +604,16 @@ class VisionHMI:
 
         # Simulation Tab
         self.simulation_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.simulation_frame, text="🧪 Simulation")
-        ttk.Button(self.simulation_frame, text="📂 Load Test Images", command=self.load_test_images).pack(pady=5)
-        ttk.Button(self.simulation_frame, text="▶️ Next Image", command=self.next_test_image).pack(pady=5)
-        ttk.Button(self.simulation_frame, text="🔄 Run Test Cycle", command=self.run_test_cycle).pack(pady=5)
+        self.notebook.add(self.simulation_frame, text=" Simulation")
+        ttk.Button(self.simulation_frame, text=" Load Test Images", command=self.load_test_images).pack(pady=5)
+        ttk.Button(self.simulation_frame, text=" Next Image", command=self.next_test_image).pack(pady=5)
+        ttk.Button(self.simulation_frame, text=" Run Test Cycle", command=self.run_test_cycle).pack(pady=5)
         self.test_image_label = ttk.Label(self.simulation_frame, text="No test images loaded")
         self.test_image_label.pack(pady=5)
 
         # Settings Tab
         self.settings_frame = ttk.Frame(self.notebook)
-        self.notebook.add(self.settings_frame, text="⚙️ Settings")
+        self.notebook.add(self.settings_frame, text=" Settings")
         settings_canvas = tk.Canvas(self.settings_frame, bg="#e6e6e6")
         settings_scrollbar = ttk.Scrollbar(self.settings_frame, orient=tk.VERTICAL, command=settings_canvas.yview)
         settings_inner = ttk.Frame(settings_canvas)
@@ -691,8 +651,8 @@ class VisionHMI:
         ttk.Label(gpio_frame, text="GPIO Trigger Pin", width=20).pack(side=tk.LEFT, padx=5)
         self.gpio_label = ttk.Label(gpio_frame, text=f"Pin: {self.params['gpio_trigger_pin'].get() if self.params['gpio_trigger_pin'].get() != -1 else 'None'}")
         self.gpio_label.pack(side=tk.LEFT, padx=5)
-        ttk.Button(gpio_frame, text="🔌 Setup GPIO", command=self.setup_gpio).pack(side=tk.LEFT, padx=5)
-        ttk.Button(settings_inner, text="💾 Save Settings", command=self.save_settings).pack(pady=5)
+        ttk.Button(gpio_frame, text=" Setup GPIO", command=self.setup_gpio).pack(side=tk.LEFT, padx=5)
+        ttk.Button(settings_inner, text=" Save Settings", command=self.save_settings).pack(pady=5)
 
     def init_log(self):
         try:
@@ -742,19 +702,19 @@ class VisionHMI:
 
     def update_mode(self, *args):
         mode = self.mode.get()
-        self.status_var.set(f"Ready | {mode}")
+        self.status_var.set(f"Prêt | {mode}")
         if mode == "Mode Réglage":
-            self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+            self.notebook.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
             self.canvas.bind("<Button-1>", self.start_roi_or_pick_color)
             self.canvas.bind("<B1-Motion>", self.draw_roi_or_mask)
             self.canvas.bind("<ButtonRelease-1>", self.end_roi_or_mask)
             self.canvas.bind("<Button-3>", self.select_roi)
             self.canvas.bind("<B3-Motion>", self.move_resize_rotate_roi)
             self.canvas.bind("<ButtonRelease-3>", self.end_move_resize_rotate)
-            self.roi_info_frame.pack(fill=tk.X, padx=5, pady=5)
+            self.roi_info_frame.pack(fill=tk.X, padx=2, pady=2)
             self.cycle_run_button.pack(pady=5)
             self.root.config(menu=self.menubar)
-        else:  # Run Mode
+        else:  # Mode Run
             self.notebook.pack_forget()
             self.canvas.unbind("<Button-1>")
             self.canvas.unbind("<B1-Motion>")
@@ -764,8 +724,9 @@ class VisionHMI:
             self.canvas.unbind("<ButtonRelease-3>")
             self.roi_info_frame.pack_forget()
             self.cycle_run_button.pack(pady=5)
+            self.result_frame.pack(fill=tk.X, padx=2, pady=2)  # Garder les résultats visibles
             self.root.config(menu=tk.Menu(self.root))
-            self.show_toast("Entered Run Mode: Only cycle execution allowed")
+            self.show_toast("Mode Run activé : Seule l'exécution du cycle est autorisée")
 
     def setup_gpio(self):
         if self.mode.get() != "Mode Réglage":
@@ -948,7 +909,7 @@ class VisionHMI:
             # Convert to ImageTk
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame_rgb)
-            img = img.resize((640, 480), Image.Resampling.LANCZOS)
+            img = img.resize((400, 300), Image.Resampling.LANCZOS)
             self.photo = ImageTk.PhotoImage(image=img)
             self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
 
@@ -1062,8 +1023,19 @@ class VisionHMI:
             x, y = round(x / grid_size) * grid_size, round(y / grid_size) * grid_size
             w, h = round(w / grid_size) * grid_size, round(h / grid_size) * grid_size
         if w > 10 and h > 10:
-            mask = np.zeros((h, w), dtype=np.uint8)  # Initialize empty mask
-            self.rois.append((x, y, w, h, self.roi_id, 0.0, self.roi_shape.get(), mask))
+            # Get original image dimensions
+            img = self.get_image()
+            img_h, img_w = img.shape[:2]
+            canvas_w, canvas_h = 400, 300  # Canvas dimensions
+            # Convert canvas coordinates to image coordinates
+            scale_x = img_w / canvas_w
+            scale_y = img_h / canvas_h
+            img_x = int(x * scale_x)
+            img_y = int(y * scale_y)
+            img_w = int(w * scale_x)
+            img_h = int(h * scale_y)
+            mask = np.zeros((img_h, img_w), dtype=np.uint8)  # Create mask with image dimensions
+            self.rois.append((img_x, img_y, img_w, img_h, self.roi_id, 0.0, self.roi_shape.get(), mask))
             self.roi_id += 1
             self.show_toast(f"ROI {self.roi_id - 1} created")
         self.canvas.delete("temp_roi")
@@ -1116,7 +1088,14 @@ class VisionHMI:
     def select_roi(self, event):
         if self.mode.get() != "Mode Réglage":
             return
-        x, y = event.x, event.y
+        # Get original image dimensions
+        img = self.get_image()
+        img_h, img_w = img.shape[:2]
+        canvas_w, canvas_h = 400, 300
+        scale_x = img_w / canvas_w
+        scale_y = img_h / canvas_h
+        x = int(event.x * scale_x)
+        y = int(event.y * scale_y)
         for roi in self.rois:
             rx, ry, rw, rh, rid, angle, shape, _ = roi
             center_x, center_y = rx + rw / 2, ry + rh / 2
@@ -1124,7 +1103,7 @@ class VisionHMI:
                 if rx <= x <= rx + rw and ry <= y <= ry + rh:
                     self.selected_roi = rid
                     self.moving = True
-                    self.ix, self.iy = x, y
+                    self.ix, self.iy = event.x, event.y
                     self.status_var.set(f"ROI {rid}: Moving")
                     break
             else:  # circle
@@ -1133,7 +1112,7 @@ class VisionHMI:
                 if dist <= radius:
                     self.selected_roi = rid
                     self.moving = True
-                    self.ix, self.iy = x, y
+                    self.ix, self.iy = event.x, event.y
                     self.status_var.set(f"ROI {rid}: Moving")
                     break
         else:
@@ -1235,8 +1214,8 @@ class VisionHMI:
                     return
             x, y = event.x, event.y
             h, w = frame.shape[:2]
-            x_scaled = int(x * w / 640.0)
-            y_scaled = int(y * h / 480.0 * h / w)
+            x_scaled = int(x * w / 400.0)  
+            y_scaled = int(y * h / 300.0 * h / w)  
             b, g, r = frame[y_scaled, x_scaled]
             hsv = cv2.cvtColor(np.uint8([[b, g, r]]), cv2.COLOR_BGR2HSV)[0][0]
             self.params["color_hue_min"].set(max(0, h - 10))
@@ -1265,6 +1244,24 @@ class VisionHMI:
         try:
             img = self.get_image()
             for roi in self.rois:
+                def end_roi(self, event):
+                    if not self.drawing:
+                        return
+                    self.drawing = False
+                    x, y = min(self.ix, event.x), min(self.iy, event.y)
+                    w, h = abs(event.x - self.ix), abs(event.y - self.iy)
+                    if self.snap_to_grid.get():
+                        grid_size = 10
+                        x, y = round(x / grid_size) * grid_size, round(y / grid_size) * grid_size
+                        w, h = round(w / grid_size) * grid_size, round(h / grid_size) * grid_size
+                    if w > 10 and h > 10:
+                        mask = np.zeros((h, w), dtype=np.uint8)
+                        self.rois.append((x, y, w, h, self.roi_id, 0.0, self.roi_shape.get(), mask))
+                        self.roi_id += 1
+                        self.show_toast(f"ROI {self.roi_id - 1} created")
+                        self.update_roi_id_menu()  # Ajouter cette ligne
+                    self.canvas.delete("temp_roi")
+                    self.status_var.set(f"Ready | {self.mode.get()}")
                 if roi[4] == self.selected_roi:
                     x, y, w, h, _, _, _, mask = roi
                     roi_img = img[y:y+h, x:x+w]
@@ -1727,7 +1724,7 @@ class VisionHMI:
                 log_window = tk.Toplevel(self.root)
                 log_window.title("Inspection Log")
                 log_window.geometry("800x600")
-                text = tk.Text(log_window, font=("Segoe UI", 10), wrap=tk.NONE)
+                text = tk.Text(log_window, font=("Segoe UI", 8), wrap=tk.NONE)
                 text.pack(fill=tk.BOTH, expand=True)
                 text.insert(tk.END, f.read())
                 text.config(state="disabled")
@@ -1841,7 +1838,7 @@ class VisionHMI:
             self.result_frame.pack_forget()
             self.show_toast("Results pane hidden")
         else:
-            self.result_frame.pack(fill=tk.X, padx=5, pady=5)
+            self.result_frame.pack(fill=tk.X, padx=2, pady=2)
             self.show_toast("Results pane shown")
 
     def toggle_maximize(self):
